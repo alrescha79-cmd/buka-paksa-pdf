@@ -2,13 +2,13 @@
 
 Aplikasi ini membantu Anda membuka file PDF yang terkunci password dengan metode brute force (coba semua kombinasi angka 6 atau 8 digit), serta dilengkapi penampil PDF yang lengkap dan mudah digunakan.
 
-> **PENTING!**
+> [!IMPORTANT]  
 > Aplikasi ini hanya untuk pembelajaran. Membuka file PDF yang dilindungi tanpa izin adalah tindakan ilegal.
 
-> **PERINGATAN!**
+> [!WARNING]  
 > Pastikan Anda memang berhak membuka file PDF tersebut. Gunakan aplikasi ini hanya untuk file milik Anda atau yang Anda punya izin untuk membukanya.
 
-> **DISCLAIMER**
+> [!CAUTION]  
 > Pengembang tidak bertanggung jawab atas penyalahgunaan aplikasi ini.
 
 ![Tampilan Aplikasi](image.png)
