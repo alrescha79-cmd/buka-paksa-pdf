@@ -80,10 +80,10 @@ pip install -r requirements.txt
 
 ```bash
 # Jalankan langsung
-tpython main.py
+python main.py
 
 # Atau pakai launcher
-tpython launcher.py
+python launcher.py
 ```
 
 ## 📋 Cara Penggunaan
