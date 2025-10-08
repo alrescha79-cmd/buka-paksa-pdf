@@ -1,118 +1,190 @@
-# PDF Viewer - Buka Paksa PDF
+# 🔓 Pembuka Password PDF & Penampil PDF
 
-Aplikasi untuk membuka file PDF yang terproteksi password dengan metode brute force menggunakan kombinasi angka 6 atau 8 digit.
+Aplikasi ini membantu Anda membuka file PDF yang terkunci password dengan metode brute force (coba semua kombinasi angka 6 atau 8 digit), serta dilengkapi penampil PDF yang lengkap dan mudah digunakan.
 
-> [!IMPORTANT]  
-> Aplikasi ini hanya untuk tujuan edukasi. Penggunaan untuk membuka file PDF yang dilindungi tanpa izin adalah ilegal.
+> **PENTING!**
+> Aplikasi ini hanya untuk pembelajaran. Membuka file PDF yang dilindungi tanpa izin adalah tindakan ilegal.
 
-> [!CAUTION]
-> Pastikan Anda memiliki hak untuk membuka file PDF tersebut. Aplikasi ini hanya untuk file PDF yang Anda miliki atau memiliki izin untuk membuka.
+> **PERINGATAN!**
+> Pastikan Anda memang berhak membuka file PDF tersebut. Gunakan aplikasi ini hanya untuk file milik Anda atau yang Anda punya izin untuk membukanya.
 
-> [!NOTE]  
-> Pengembang tidak bertanggung jawab atas penggunaan aplikasi ini untuk tujuan ilegal.
+> **DISCLAIMER**
+> Pengembang tidak bertanggung jawab atas penyalahgunaan aplikasi ini.
 
-## Fitur
+![Tampilan Aplikasi](image.png)
 
-- ✅ Brute force password 6 digit (000000-999999)
-- ✅ Brute force password 8 digit (00000000-99999999)
-- ✅ Preview halaman PDF setelah berhasil dibuka
-- ✅ Interface GUI yang user-friendly
-- ✅ Real-time status update saat proses berlangsung
-- ✅ Peringatan untuk proses 8 digit yang memakan waktu lama
+## 🏗️ Struktur Modular
 
-## Requirements
+```
+pdf-viewer/
+├── 📂 core/                    # Logika utama
+│   ├── __init__.py
+│   └── password_cracker.py     # Algoritma pembuka password
+│
+├── 📂 ui/                      # Komponen antarmuka
+│   ├── __init__.py
+│   ├── custom_dialog.py        # Dialog interaktif
+│   ├── pdf_viewer.py           # Penampil PDF & navigasi
+│   └── progress_monitor.py     # Progress & monitoring
+│
+├── main.py                     # Aplikasi utama
+├── launcher.py                 # Script peluncur cepat
+└── requirements.txt            # Daftar dependensi
+```
 
-### Python Version
+## ✨ Fitur Utama
 
-- Python 3.7 atau lebih baru
+### 🔐 **Pembuka Password PDF:**
 
-### Dependencies
+- ✅ **Mode 6 digit** (000000-999999) - Cepat
+- ✅ **Mode 8 digit** (00000000-99999999) - Lengkap, lebih lama
+- ⚡ **Multi-threading** - Memaksimalkan semua inti CPU
+- 🧵 **Single-thread** - Alternatif stabil, progress detail
+- 📊 **Progress real-time** dengan estimasi waktu sisa
+- ⏸️ **Jeda/Lanjutkan** - Konfirmasi sebelum lanjut
+- ⏹️ **Stop kapan saja** - Proses bisa dihentikan aman
 
-- `PyMuPDF` (fitz) - untuk membaca dan memanipulasi PDF
-- `Pillow` (PIL) - untuk pemrosesan gambar
-- `tkinter` - untuk GUI (sudah termasuk dalam Python)
+### 📖 **Penampil PDF Lengkap:**
 
-## Instalasi
+- 🖼️ **Bisa buka banyak halaman**
+- 🔍 **Zoom canggih** (0.25x - 5.0x)
+- 🧭 **Navigasi halaman** - Sebelumnya, Berikutnya, Lompat, Awal, Akhir
+- ⌨️ **Shortcut keyboard** - Navigasi & zoom cepat
+- 📏 **Auto-fit window** - Ukuran otomatis
+- 🖱️ **Scroll** - Mendukung scroll vertikal & horizontal
 
-### 1. Clone repository atau download source code
+### 💻 **Pengalaman Pengguna:**
+
+- 🎨 **Tampilan profesional** dan rapi
+- 💬 **Dialog custom** dengan font besar & tombol jelas
+- 📱 **Desain responsif** - Menyesuaikan ukuran window
+- 🔄 **Aman untuk thread** - GUI tetap responsif
+- ℹ️ **Feedback real-time** untuk semua proses
+
+## 🚀 Cara Cepat Memulai
+
+### **Syarat:**
+
+- Python 3.7+
+- Dependensi: `PyMuPDF`, `Pillow`, `tkinter`
+
+### **Instalasi:**
 
 ```bash
 git clone https://github.com/alrescha79-cmd/buka-paksa-pdf.git pdf-viewer
 cd pdf-viewer
-```
-
-### 2. Install dependencies
-
-```bash
 pip install -r requirements.txt
 ```
 
-### 3. Jalankan aplikasi
+### **Menjalankan Aplikasi:**
 
 ```bash
-python main.py
+# Jalankan langsung
+tpython main.py
+
+# Atau pakai launcher
+tpython launcher.py
 ```
 
-## Cara Penggunaan
+## 📋 Cara Penggunaan
 
-1. **Jalankan aplikasi**
+### **1. Pilih PDF & Mode**
 
-   ```bash
-   python main.py
-   ```
+- Klik **"Pilih PDF dan Mulai"**
+- Pilih mode **6 digit** (cepat) atau **8 digit** (lengkap)
+- Pilih **Multithreading** (disarankan) atau **Single-thread**
 
-2. **Pilih file PDF**
-   - Klik tombol "Pilih PDF dan Mulai Proses"
-   - Pilih file PDF yang terproteksi password
+### **2. Pantau Progress**
 
-3. **Pilih mode brute force**
-   - **6 digit**: Cepat, mencoba 1,000,000 kombinasi (000000-999999)
-   - **8 digit**: Sangat lama, mencoba 100,000,000 kombinasi (00000000-99999999)
+- **Progress real-time** dengan estimasi waktu sisa
+- **Indikator kecepatan** (percobaan/detik)
+- **Jeda/Lanjutkan** dengan konfirmasi
+- **Tombol Stop** untuk menghentikan proses
 
-4. **Tunggu proses selesai**
-   - Status akan ditampilkan secara real-time
-   - Jika password ditemukan, halaman PDF akan ditampilkan
+### **3. Buka PDF**
 
-## Peringatan
+Setelah password ditemukan, PDF akan terbuka dengan fitur penampil lengkap:
 
-⚠️ **Mode 8 digit** akan memakan waktu sangat lama (bisa berjam-jam hingga berhari-hari) tergantung pada:
+#### **🔍 Kontrol Zoom:**
 
-- Kecepatan komputer
-- Posisi password dalam urutan (apakah di awal atau akhir range)
+- Tombol **Zoom In/Out** atau tombol `+`/`-`
+- Tombol **Fit Window** atau `0`/`F`
+- **Scroll mouse** untuk zoom cepat
 
-⚠️ **Penggunaan Legal**: Pastikan Anda memiliki hak untuk membuka PDF tersebut. Tool ini hanya untuk file PDF yang Anda miliki atau memiliki izin untuk membuka.
+#### **🧭 Navigasi Halaman:**
 
-## Troubleshooting
+- Tombol **Sebelumnya/Berikutnya** atau panah keyboard
+- Dialog **Lompat ke halaman** atau tombol `G`
+- Tombol **Awal/Akhir** untuk halaman pertama/terakhir
+- Indikator halaman saat ini
 
-### Error: ModuleNotFoundError
+#### **⌨️ Shortcut Keyboard:**
+
+```
+Navigasi:  ← → ↑ ↓ P N      (Halaman sebelumnya/berikutnya)
+           Home End         (Halaman pertama/terakhir)
+           G                (Dialog lompat halaman)
+
+Zoom:      + - = 0 F        (Zoom In/Out/Fit)
+```
+
+## ⚡ Fitur Lanjutan
+
+### **🎮 Sistem Jeda/Lanjutkan:**
+
+- **Jeda pintar** dengan konfirmasi sebelum lanjut
+- **Manajemen resource** - hemat CPU saat dijeda
+- **Waktu akurat** - waktu jeda tidak dihitung estimasi
+- **Lanjutkan mulus** dari posisi terakhir
+
+### **📊 Monitoring Progress:**
+
+- **Progress real-time** dengan visual bar
+- **Indikator kecepatan** (percobaan/detik)
+- **Estimasi waktu** berdasarkan kecepatan saat ini
+- **Monitoring CPU** untuk performa optimal
+
+## ⚠️ Catatan Penting
+
+### **Performa:**
+
+- **Mode 6 digit:** Menit hingga jam (1 juta kombinasi)
+- **Mode 8 digit:** Jam hingga hari (100 juta kombinasi)
+- **Multi-threading:** Hingga 10x lebih cepat dari single-thread
+- **Performa tergantung kecepatan CPU dan posisi password**
+
+### **Legalitas:**
+
+> Gunakan hanya untuk file PDF milik Anda atau yang Anda punya izin membukanya.
+
+## 🛠️ Solusi Masalah
+
+### **Masalah Instalasi:**
 
 ```bash
+# Install dependensi
 pip install -r requirements.txt
+
+# Linux: Install tkinter jika belum ada
+sudo apt-get install python3-tk  # Ubuntu/Debian
+sudo dnf install python3-tkinter # Fedora
 ```
 
-### Error: tkinter tidak ditemukan (Linux)
+### **Masalah Saat Menjalankan:**
 
-```bash
-# Ubuntu/Debian
-sudo apt-get install python3-tk
+- **PDF tidak bisa dibuka:** Cek izin file dan validitas
+- **Lambat:** Tutup aplikasi lain, gunakan multi-threading
+- **Masalah memori:** Gunakan mode 6 digit untuk RAM terbatas
 
-# CentOS/RHEL/Fedora
-sudo yum install tkinter
-# atau
-sudo dnf install python3-tkinter
-```
+## 🏗️ Spesifikasi Teknis
 
-### Error: Tidak bisa membuka PDF
+| Komponen         | Teknologi         | Fungsi                       |
+|------------------|------------------|------------------------------|
+| **Arsitektur**   | Python Modular   | Pemisahan logika & tampilan  |
+| **Framework GUI**| tkinter          | Antarmuka lintas platform    |
+| **PDF**          | PyMuPDF (fitz)   | Baca & otentikasi PDF        |
+| **Rendering**    | Pillow (PIL)     | Tampilkan halaman PDF        |
+| **Threading**    | concurrent.futures| Paralel brute force password |
+| **Range Password**| Angka brute force| 6 digit: 1 juta, 8 digit: 100 juta |
 
-- Pastikan file PDF valid dan tidak corrupt
-- Pastikan file tidak sedang dibuka di aplikasi lain
-
-## Spesifikasi Teknis
-
-- **GUI Framework**: tkinter
-- **PDF Library**: PyMuPDF (fitz)
-- **Image Processing**: Pillow (PIL)
-- **Metode**: Brute force dengan iterasi sequential
-- **Range Password**:
-  - 6 digit: 000000 - 999999
-  - 8 digit: 00000000 - 99999999
+---
