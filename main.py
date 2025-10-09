@@ -29,7 +29,7 @@ class PDFCrackerApp:
     
     def setup_window(self):
         """Setup main window properties"""
-        self.root.title("PDF Password Cracker & Viewer (Multithreaded + Navigation)")
+        self.root.title("PDF Password Cracker & Viewer (Free)")
         self.root.geometry("1000x800")
         self.root.minsize(900, 700)
     
@@ -62,7 +62,8 @@ class PDFCrackerApp:
         self.tombol_buka = tk.Button(button_frame, text="Pilih PDF dan Mulai", 
                                     command=self.buka_file_dialog, 
                                     bg="#4CAF50", fg="white", 
-                                    font=("Arial", 12, "bold"), width=20, height=2)
+                                    font=("Arial", 12, "bold"), width=20, height=2, 
+                                    state="normal", relief="raised", bd=2, highlightthickness=2)
         self.tombol_buka.pack(side=tk.LEFT, padx=5)
 
         self.tombol_pause = tk.Button(button_frame, text="Pause", 
@@ -144,11 +145,11 @@ class PDFCrackerApp:
         self.tombol_next.pack(side=tk.LEFT, padx=2)
 
         cpu_info = tk.Label(info_frame, text=f"CPU Cores: {multiprocessing.cpu_count()}", 
-                           font=("Arial", 11), fg="gray")
+                           font=("Arial", 11, "bold"), fg="gray")
         cpu_info.pack()
 
         self.status_label = tk.Label(info_frame, text="Status: Menunggu file PDF...", 
-                                    font=("Arial", 12), wraplength=800, fg="#333")
+                                    font=("Arial", 10, "bold"), wraplength=800, fg="#333", anchor="w")
         self.status_label.pack(pady=5)
 
         # PDF display frame dengan scrollbar
@@ -251,8 +252,8 @@ class PDFCrackerApp:
             self.root,
             "Pilih Mode Password",
             "Pilih mode password yang ingin dicoba:\n\n"
-            "6 Digit: 000000 - 999999 (Relatif cepat)\n"
-            "8 Digit: 00000000 - 99999999 (Lebih lama)\n\n"
+            "6 Digit: 000000 - 999999\n"
+            "8 Digit: 00000000 - 99999999\n\n"
             "Pilih mode yang sesuai dengan password PDF Anda:",
             [
                 ("6 Digit", True, "#4CAF50"),
@@ -271,8 +272,8 @@ class PDFCrackerApp:
             self.root,
             "Pilih Metode Pemrosesan",
             f"Pilih metode pemrosesan untuk mencari password:\n\n"
-            f"Multithreading: Menggunakan {cpu_count} CPU cores - CEPAT\n"
-            f"Single Thread: Menggunakan 1 core - Lambat tapi stabil\n\n"
+            f"Multithreading: Menggunakan {cpu_count} CPU cores\n"
+            f"Single Thread: Menggunakan 1 core\n\n"
             f"Rekomendasi: Gunakan Multithreading untuk performa terbaik",
             [
                 ("Multithreading", True, "#4CAF50"),
@@ -502,7 +503,7 @@ class PDFCrackerApp:
         # Peringatan untuk 8-digit single thread
         konfirmasi = show_custom_dialog(
             self.root,
-            "PERINGATAN KERAS - 8 Digit Single Thread",
+            "PERINGATAN - 8 Digit Single Thread",
             "Mode 8 digit single-thread akan memakan waktu yang lebih lama!\n\n"
             "100,000,000 kombinasi password akan dicoba secara berurutan\n"
             "Tidak ada pause/resume support untuk mode ini\n\n"
