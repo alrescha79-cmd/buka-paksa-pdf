@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buka Paksa PDF - Password Brute Force Tool for PDF</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>Buka Paksa PDF</h1>
+            <p class="subtitle">Alat untuk membuka PDF yang dilindungi password menggunakan metode brute force</p>
+        </header>
+
+        <!-- Legal Warning -->
+        <div class="warning-card">
+            <div class="warning-content">
+                <h3>Peringatan Hukum & Etika</h3>
+                <p><strong>Aplikasi ini hanya untuk tujuan edukasi.</strong> Penggunaan untuk membuka file PDF yang dilindungi tanpa izin adalah ilegal. Pastikan Anda memiliki hak untuk membuka file PDF tersebut.</p>
+            </div>
+        </div>
+
+        <!-- Main Application -->
+        <div class="main-app">
+            <!-- File Upload Section -->
+            <section class="upload-section">
+                <h2>1. Pilih File PDF</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📄</div>
+                    <p class="upload-text">Seret dan lepas file PDF di sini atau <button class="btn btn--outline" id="selectFileBtn" type="button">pilih file</button></p>
+                    <input type="file" id="fileInput" accept=".pdf" hidden>
+                    <small class="upload-hint">Hanya file PDF yang diizinkan</small>
+                </div>
+                <div class="file-info hidden" id="fileInfo">
+                    <div class="file-details">
+                        <span class="file-name" id="fileName"></span>
+                        <span class="file-size" id="fileSize"></span>
+                    </div>
+                    <button class="btn btn--outline" id="changeFileBtn" type="button">Ganti File</button>
+                </div>
+            </section>
+
+            <!-- Mode Selection -->
+            <section class="mode-section hidden" id="modeSection">
+                <h2>2. Pilih Mode Brute Force</h2>
+                <div class="mode-options">
+                    <div class="mode-card" data-mode="6">
+                        <div class="mode-header">
+                            <h3>Mode 6 Digit</h3>
+                            <span class="status status--success">Direkomendasikan</span>
+                        </div>
+                        <div class="mode-details">
+                            <p><strong>Range:</strong> 000000 - 999999</p>
+                            <p><strong>Kombinasi:</strong> 1 juta kombinasi</p>
+                            <p><strong>Perkiraan waktu:</strong> Relatif cepat (kurang dari 1 menit)</p>
+                        </div>
+                    </div>
+                    <div class="mode-card" data-mode="8">
+                        <div class="mode-header">
+                            <h3>Mode 8 Digit</h3>
+                            <span class="status status--warning">Kompleks!</span>
+                        </div>
+                        <div class="mode-details">
+                            <p><strong>Range:</strong> 00000000 - 99999999</p>
+                            <p><strong>Kombinasi:</strong> 100 juta kombinasi</p>
+                            <p><strong>Perkiraan waktu:</strong> <span class="text-warning">Lebih lama (lebih dari 1 menit)</span></p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Process Controls -->
+            <section class="control-section hidden" id="controlSection">
+                <h2>3. Kontrol Proses</h2>
+                <div class="control-panel">
+                    <button class="btn btn--primary btn--lg" id="startBtn" type="button" disabled>Mulai Proses</button>
+                    <button class="btn btn--outline btn--lg hidden" id="cancelBtn" type="button">Batalkan</button>
+                </div>
+            </section>
+
+            <!-- Progress Section -->
+            <section class="progress-section hidden" id="progressSection">
+                <h2>Status Proses</h2>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">0%</div>
+                </div>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <label>Password Saat Ini:</label>
+                        <span id="currentPassword">-</span>
+                    </div>
+                    <div class="status-item">
+                        <label>Waktu Berlalu:</label>
+                        <span id="elapsedTime">00:00:00</span>
+                    </div>
+                    <div class="status-item">
+                        <label>Kombinasi Dicoba:</label>
+                        <span id="attemptCount">0</span>
+                    </div>
+                    <div class="status-item">
+                        <label>Perkiraan waktu yang dibutuhkan:</label>
+                        <span id="estimatedTime">-</span>
+                    </div>
+                </div>
+                <div class="status-message" id="statusMessage">
+                    Memulai proses brute force...
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section hidden" id="resultsSection">
+                <div class="results-content" id="resultsContent">
+                    <!-- Success or failure content will be injected here -->
+                </div>
+                <div class="results-actions">
+                    <button class="btn btn--outline" id="resetBtn" type="button">Coba File Lain</button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal hidden" id="confirmModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Konfirmasi Mode 8 Digit</h3>
+            </div>
+            <div class="modal-body">
+                <div class="warning-icon">⚠️</div>
+                <p><strong>PERINGATAN</strong></p>
+                <p>Mode 8 digit akan mencoba 100 juta kombinasi password. Proses ini dapat memakan waktu yang lebih lama dan akan menggunakan banyak sumber daya komputer.</p>
+                <p>Apakah Anda yakin ingin melanjutkan?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--outline" id="cancelConfirm" type="button">Batal</button>
+                <button class="btn btn--primary" id="confirmStart" type="button">Ya, Lanjutkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Modal -->
+    <div class="modal hidden" id="alertModal" data-variant="info">
+        <div class="modal-overlay" data-alert-close></div>
+        <div class="modal-content modal-content--alert">
+            <div class="modal-header">
+                <h3 id="alertModalTitle">Informasi</h3>
+            </div>
+            <div class="modal-body">
+                <div class="alert-icon" id="alertModalIcon">ℹ️</div>
+                <p id="alertModalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--primary" id="alertModalClose" type="button">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="app-footer">
+        <div class="app-footer__content">
+            <span>© {{ current_year }} <a href="http://cakson.my.id/" class="app-footer__link" target="_blank" rel="noopener noreferrer">{{ creator_name }}</a></span>
+            <span class="app-footer__divider">•</span>
+            <span>Dibuat dengan ❤️ untuk membantu membuka PDF Anda.</span>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
