@@ -3,35 +3,32 @@ import io
 import queue
 import threading
 import time
+from datetime import datetime
+
 from flask import Flask, render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
-import fitz  # PyMuPDF
+import fitz
 
-# Import your existing password cracker
 from core.password_cracker import PasswordCracker
 
-# --- Flask App Setup ---
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-# --- Job State Management ---
-# This dictionary will hold the state of the cracking job.
-# In a real multi-user app, this would be a database or a more robust solution.
 JOB_STATE = {}
 
-# Threading and Queue for communication
 progress_queue = queue.Queue()
 stop_event = threading.Event()
-pause_event = threading.Event() # Note: Pause/Resume is not implemented in this UI for simplicity
+pause_event = threading.Event()
 
-# Instantiate your cracker
 password_cracker = PasswordCracker(progress_queue, stop_event, pause_event)
+
+APP_CREATOR = "Anggun Caksono"
 
 def reset_job_state():
     """Resets the global job state."""
     global JOB_STATE
     JOB_STATE = {
-        "status": "idle", # idle, running, found, failed, stopped
+        "status": "idle",
         "filename": None,
         "password": None,
         "progress": 0,
@@ -58,7 +55,7 @@ def prepare_unlocked_pdf(password):
 
     try:
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    except Exception as exc:  # pragma: no cover - defensive
+    except Exception as exc:
         raise ValueError(f"Could not reopen PDF: {exc}") from exc
 
     try:
@@ -73,7 +70,7 @@ def prepare_unlocked_pdf(password):
         JOB_STATE["unlocked_pdf_base64"] = encoded
         JOB_STATE["pdf_bytes"] = None
         return encoded
-    except Exception as exc:  # pragma: no cover - defensive
+    except Exception as exc:
         doc.close()
         raise ValueError(f"Failed to prepare unlocked PDF for {filename}: {exc}") from exc
 
@@ -111,13 +108,11 @@ def cracking_monitor():
                 break
 
         except queue.Empty:
-            # Continue loop if queue is empty
             if stop_event.is_set():
                 JOB_STATE["status"] = "stopped"
                 break
             continue
 
-    # Final cleanup
     if not stop_event.is_set() and JOB_STATE["status"] not in ["found", "failed", "error"]:
         JOB_STATE["status"] = "failed"
 
@@ -125,11 +120,14 @@ def cracking_monitor():
         JOB_STATE["pdf_bytes"] = None
 
 
-# --- Flask Routes ---
 @app.route('/')
 def index():
     """Render the main page."""
-    return render_template('index.html')
+    return render_template(
+        'index.html',
+        current_year=datetime.now().year,
+        creator_name=APP_CREATOR
+    )
 
 @app.route('/crack', methods=['POST'])
 def start_cracking():
@@ -146,7 +144,6 @@ def start_cracking():
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
     
-    # Get options from the form
     digit_mode = request.form.get('digit_mode', '6')
     thread_mode = request.form.get('thread_mode', 'multi')
 
@@ -157,19 +154,17 @@ def start_cracking():
         if not file_bytes:
             return jsonify({"error": "Uploaded file is empty."}), 400
 
-        # Check if PDF is encrypted
         try:
             doc = fitz.open(stream=file_bytes, filetype="pdf")
             if not doc.is_encrypted:
                 doc.close()
                 return jsonify({
-                    "error": "File is not encrypted. No password needed."
+                    "error": "PDF tidak dienkripsi. Tidak perlu password."
                 }), 400
             doc.close()
         except Exception as e:
             return jsonify({"error": f"Invalid PDF file: {e}"}), 400
             
-        # Reset events and state
         stop_event.clear()
         reset_job_state()
         JOB_STATE.update({
@@ -180,18 +175,14 @@ def start_cracking():
             "pdf_bytes": file_bytes
         })
 
-        # Start the correct cracking method in a background thread
         target_func = None
         if digit_mode == '6' and thread_mode == 'multi':
             target_func = password_cracker.crack_6_digit_multithread
         elif digit_mode == '8' and thread_mode == 'multi':
             target_func = password_cracker.crack_8_digit_multithread
-        # Note: Single-thread modes are not recommended for web UIs as they are blocking.
-        # This implementation focuses on the superior multi-threaded approach.
         else:
              return jsonify({"error": "This web UI only supports the multi-threaded method."}), 400
 
-        # Start cracker and monitor in background threads
         cracker_thread = threading.Thread(target=target_func, args=(file_bytes,), daemon=True)
         monitor_thread = threading.Thread(target=cracking_monitor, daemon=True)
         

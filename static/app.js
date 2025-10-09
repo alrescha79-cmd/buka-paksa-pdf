@@ -1,8 +1,4 @@
-// Frontend logic for the redesigned Indonesian UI
-// Wires drag/drop upload, mode selection, start/stop, and status polling to Flask endpoints
-
 (function() {
-  // Elements
   const uploadArea = document.getElementById('uploadArea');
   const selectFileBtn = document.getElementById('selectFileBtn');
   const fileInput = document.getElementById('fileInput');
@@ -33,17 +29,22 @@
   const confirmModal = document.getElementById('confirmModal');
   const cancelConfirmBtn = document.getElementById('cancelConfirm');
   const confirmStartBtn = document.getElementById('confirmStart');
+  const alertModal = document.getElementById('alertModal');
+  const alertModalTitle = document.getElementById('alertModalTitle');
+  const alertModalMessage = document.getElementById('alertModalMessage');
+  const alertModalIcon = document.getElementById('alertModalIcon');
+  const alertModalClose = document.getElementById('alertModalClose');
+  const alertModalOverlay = alertModal ? alertModal.querySelector('[data-alert-close]') : null;
 
   const STORAGE_PREFIX = 'pdf-viewer:';
 
-  // State
   let selectedFile = null;
-  let selectedMode = null; // '6' or '8'
+  let selectedMode = null;
   let statusInterval = null;
   let lastProgress = 0;
   let unlockedBlobUrl = null;
+  let alertDismissHandler = null;
 
-  // Helpers
   function bytesToSize(bytes) {
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     if (bytes === 0) return '0 B';
@@ -118,38 +119,160 @@
     }
   }
 
+  function parseEtaToSeconds(rawEta) {
+    if (!rawEta || typeof rawEta !== 'string') return null;
+    const parts = rawEta.split(':').map(Number);
+    if (parts.some((part) => Number.isNaN(part))) return null;
+    while (parts.length < 3) parts.unshift(0);
+    const [hours, minutes, seconds] = parts.slice(-3);
+    return (hours * 3600) + (minutes * 60) + seconds;
+  }
+
+  function formatSecondsToClock(totalSeconds) {
+    const seconds = Math.max(0, Math.round(totalSeconds));
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return [hours, minutes, secs].map((unit) => unit.toString().padStart(2, '0')).join(':');
+  }
+
+  function clampEtaDisplay(rawEta, total) {
+    let limitSeconds;
+    if (typeof total === 'number' && total >= 100_000_000) {
+      limitSeconds = 300;
+    } else if (typeof total === 'number' && total > 0) {
+      limitSeconds = 60;
+    } else {
+      limitSeconds = selectedMode === '8' ? 300 : 60;
+    }
+
+    const seconds = parseEtaToSeconds(rawEta);
+    if (seconds == null) {
+      return rawEta || (limitSeconds === 300 ? '≤ 5 menit' : '≤ 1 menit');
+    }
+    if (seconds > limitSeconds) {
+      return limitSeconds === 300 ? '≤ 5 menit' : '≤ 1 menit';
+    }
+    return formatSecondsToClock(seconds);
+  }
+
+  const ALERT_ICONS = {
+    info: 'ℹ️',
+    success: '✅',
+    warning: '⚠️',
+    error: '⛔'
+  };
+
+  function setAlertVariant(variant) {
+    if (!alertModal) return;
+    const activeVariant = ALERT_ICONS[variant] ? variant : 'info';
+    alertModal.setAttribute('data-variant', activeVariant);
+    if (alertModalIcon) {
+      alertModalIcon.textContent = ALERT_ICONS[activeVariant];
+    }
+  }
+
+  function closeAlertModal(reason) {
+    if (!alertModal) return;
+    alertModal.classList.add('hidden');
+    if (alertDismissHandler) {
+      const handler = alertDismissHandler;
+      alertDismissHandler = null;
+      handler(reason || null);
+    }
+  }
+
+  function showAlertModal(message, options = {}) {
+    if (!alertModal) {
+      window.alert(message);
+      if (typeof options.onClose === 'function') {
+        options.onClose();
+      }
+      return;
+    }
+
+    const {
+      title = 'Informasi',
+      variant = 'info',
+      dismissText = 'Tutup',
+      onClose = null
+    } = options;
+
+    setAlertVariant(variant);
+
+    alertDismissHandler = typeof onClose === 'function' ? onClose : null;
+    alertModal.classList.remove('hidden');
+
+    if (alertModalTitle) {
+      alertModalTitle.textContent = title;
+    }
+    if (alertModalMessage) {
+      alertModalMessage.textContent = message;
+    }
+    if (alertModalClose) {
+      alertModalClose.textContent = dismissText;
+      try {
+        alertModalClose.focus({ preventScroll: true });
+      } catch (err) {
+        alertModalClose.focus();
+      }
+    }
+  }
+
+  if (alertModalClose) {
+    alertModalClose.addEventListener('click', () => closeAlertModal('button'));
+  }
+
+  if (alertModalOverlay) {
+    alertModalOverlay.addEventListener('click', () => closeAlertModal('overlay'));
+  }
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && alertModal && !alertModal.classList.contains('hidden')) {
+      event.preventDefault();
+      closeAlertModal('escape');
+    }
+  });
+
+  function resetControls() {
+    startBtn.disabled = false;
+    cancelBtn.classList.add('hidden');
+    cancelBtn.disabled = false;
+    if (statusInterval) {
+      clearInterval(statusInterval);
+      statusInterval = null;
+    }
+  }
+
   function show(el) { el.classList.remove('hidden'); }
   function hide(el) { el.classList.add('hidden'); }
 
   function resetAll() {
-    // Stop polling
-    if (statusInterval) clearInterval(statusInterval);
+    if (statusInterval) {
+      clearInterval(statusInterval);
+      statusInterval = null;
+    }
 
-    // Reset state
     selectedFile = null;
     selectedMode = null;
     lastProgress = 0;
 
-    // Reset UI
     fileInput.value = '';
     hide(fileInfo);
     fileNameEl.textContent = '';
     fileSizeEl.textContent = '';
 
-  revokeUnlockedBlob();
+    revokeUnlockedBlob();
 
-    // Sections
     show(uploadArea.closest('section'));
     hide(modeSection);
     hide(controlSection);
     hide(progressSection);
     hide(resultsSection);
 
-    // Controls
     startBtn.disabled = true;
     hide(cancelBtn);
 
-    // Progress
     progressFill.style.width = '0%';
     progressText.textContent = '0%';
     currentPasswordEl.textContent = '-';
@@ -158,14 +281,12 @@
     estimatedTimeEl.textContent = '-';
     statusMessageEl.textContent = 'Menunggu file diunggah...';
 
-    // Clear selection highlight
     modeCards.forEach(c => c.classList.remove('selected'));
   }
 
   function openModal() { confirmModal.classList.remove('hidden'); }
   function closeModal() { confirmModal.classList.add('hidden'); }
 
-  // Upload handlers
   selectFileBtn.addEventListener('click', () => fileInput.click());
   changeFileBtn.addEventListener('click', () => fileInput.click());
 
@@ -178,9 +299,7 @@
     uploadArea.classList.remove('dragover');
   });
 
-  // Also allow clicking anywhere on the drop area to open the file picker
   uploadArea.addEventListener('click', (e) => {
-    // If the explicit select button was clicked, the button handler will run
     if (e.target.closest('button')) return;
     fileInput.click();
   });
@@ -199,7 +318,10 @@
 
   function handleSelectedFile(file) {
     if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-      alert('Hanya file PDF yang diizinkan.');
+      showAlertModal('Hanya file PDF yang diizinkan.', {
+        title: 'File tidak valid',
+        variant: 'error'
+      });
       return;
     }
     selectedFile = file;
@@ -208,11 +330,9 @@
     show(fileInfo);
     show(modeSection);
     cacheUploadedPdf(file);
-    // Scroll into view
     modeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // Mode selection
   modeCards.forEach(card => {
     card.addEventListener('click', () => {
       modeCards.forEach(c => c.classList.remove('selected'));
@@ -224,7 +344,6 @@
     });
   });
 
-  // Start process
   startBtn.addEventListener('click', async () => {
     if (!selectedFile || !selectedMode) return;
 
@@ -244,12 +363,12 @@
 
   async function startCracking() {
     try {
-      // Reset visual state
       hide(resultsSection);
       show(progressSection);
       statusMessageEl.textContent = 'Mengunggah dan memulai proses...';
       startBtn.disabled = true;
       cancelBtn.classList.remove('hidden');
+      progressSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
       const formData = new FormData();
       formData.append('pdf', selectedFile);
@@ -259,30 +378,34 @@
       const res = await fetch('/crack', { method: 'POST', body: formData });
       const json = await res.json();
       if (!res.ok) {
-        alert(json.error || 'Terjadi kesalahan saat memulai proses.');
+        showAlertModal(json.error || 'Terjadi kesalahan saat memulai proses.', {
+          title: 'Gagal memulai proses',
+          variant: 'error'
+        });
         startBtn.disabled = false;
         cancelBtn.classList.add('hidden');
         return;
       }
 
-      // Begin polling
       statusInterval = setInterval(updateStatus, 600);
     } catch (err) {
-      alert('Gagal terhubung ke server.');
+      showAlertModal('Gagal terhubung ke server.', {
+        title: 'Koneksi bermasalah',
+        variant: 'error'
+      });
       startBtn.disabled = false;
       cancelBtn.classList.add('hidden');
     }
   }
 
-  // Cancel/Stop
   cancelBtn.addEventListener('click', async () => {
     cancelBtn.disabled = true;
     try {
       await fetch('/stop', { method: 'POST' });
     } catch {}
-    if (statusInterval) clearInterval(statusInterval);
     statusMessageEl.textContent = 'Proses dibatalkan oleh pengguna.';
-    show(resultsSection);
+      resetControls();
+      show(resultsSection);
     resultsContent.innerHTML = `
       <div class="failure-result">
         <div class="failure-icon">⛔</div>
@@ -290,17 +413,13 @@
         <p>Proses brute force dihentikan oleh pengguna.</p>
       </div>
     `;
-    cancelBtn.classList.add('hidden');
-    startBtn.disabled = false;
   });
 
-  // Polling status
   async function updateStatus() {
     try {
       const res = await fetch('/status');
       const data = await res.json();
 
-      // Update common fields
       const total = data.total || (selectedMode === '6' ? 1_000_000 : 100_000_000);
       const progress = Math.min(data.progress || 0, total);
       const pct = total > 0 ? ((progress / total) * 100) : 0;
@@ -309,7 +428,7 @@
       currentPasswordEl.textContent = data.current_attempt || '-';
       elapsedTimeEl.textContent = data.elapsed || '0s';
       attemptCountEl.textContent = String(progress);
-      estimatedTimeEl.textContent = data.eta || '-';
+      estimatedTimeEl.textContent = clampEtaDisplay(data.eta, data.total);
 
       if (data.status === 'running') {
         statusMessageEl.textContent = `Berjalan • ${data.rate || 0} percobaan/detik`;
@@ -317,9 +436,7 @@
         return;
       }
 
-      // Terminal states
-      clearInterval(statusInterval);
-      cancelBtn.classList.add('hidden');
+      resetControls();
       show(resultsSection);
 
       if (data.status === 'found') {
@@ -360,7 +477,7 @@
               <div class="preview-icon">📄</div>
               <p>PDF berhasil dibuka dan disimpan di local storage browser Anda.</p>
               ${blobUrl ? '<iframe id="unlockedPdfFrame" class="pdf-frame" title="Pratinjau PDF" frameborder="0"></iframe>' : ''}
-              ${blobUrl ? `<div class="preview-actions"><button class="btn btn--outline" id="openPdfNewTab">Buka di Tab Baru</button></div>` : ''}
+              ${blobUrl ? `<div class="preview-actions"><button class="btn btn--outline" id="openPdfNewTab">Buka PDF di Tab Baru</button></div>` : ''}
               ${storageMessage}
             </div>
           </div>
@@ -378,6 +495,7 @@
             });
           }
         }
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       } else if (data.status === 'failed' || data.status === 'error') {
         statusMessageEl.textContent = data.status === 'error' ? (data.error_message || 'Terjadi kesalahan.') : 'Selesai tanpa menemukan password.';
         resultsContent.innerHTML = `
@@ -387,6 +505,7 @@
             <p>${data.status === 'error' ? (data.error_message || '') : 'Maaf, password tidak ditemukan dalam rentang yang dipilih.'}</p>
           </div>
         `;
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       } else if (data.status === 'stopped') {
         statusMessageEl.textContent = 'Proses dihentikan.';
         resultsContent.innerHTML = `
@@ -396,19 +515,17 @@
             <p>Proses brute force dihentikan oleh pengguna.</p>
           </div>
         `;
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     } catch (e) {
-      // Network issues – keep trying a few times or show message
       statusMessageEl.textContent = 'Koneksi ke server terputus. Mencoba lagi...';
     }
   }
 
-  // Reset flow
   resetBtn.addEventListener('click', () => {
     resetAll();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  // Initial
   resetAll();
 })();

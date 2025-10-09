@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buka Paksa PDF - Password Brute Force Tool</title>
+    <title>Buka Paksa PDF - Password Brute Force Tool for PDF</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -16,7 +16,6 @@
 
         <!-- Legal Warning -->
         <div class="warning-card">
-            <div class="warning-icon">⚠️</div>
             <div class="warning-content">
                 <h3>Peringatan Hukum & Etika</h3>
                 <p><strong>Aplikasi ini hanya untuk tujuan edukasi.</strong> Penggunaan untuk membuka file PDF yang dilindungi tanpa izin adalah ilegal. Pastikan Anda memiliki hak untuk membuka file PDF tersebut.</p>
@@ -55,18 +54,18 @@
                         <div class="mode-details">
                             <p><strong>Range:</strong> 000000 - 999999</p>
                             <p><strong>Kombinasi:</strong> 1 juta kombinasi</p>
-                            <p><strong>Perkiraan waktu:</strong> Relatif cepat (beberapa menit)</p>
+                            <p><strong>Perkiraan waktu:</strong> Relatif cepat (kurang dari 1 menit)</p>
                         </div>
                     </div>
                     <div class="mode-card" data-mode="8">
                         <div class="mode-header">
                             <h3>Mode 8 Digit</h3>
-                            <span class="status status--warning">Peringatan!</span>
+                            <span class="status status--warning">Kompleks!</span>
                         </div>
                         <div class="mode-details">
                             <p><strong>Range:</strong> 00000000 - 99999999</p>
                             <p><strong>Kombinasi:</strong> 100 juta kombinasi</p>
-                            <p><strong>Perkiraan waktu:</strong> <span class="text-warning">Sangat lama (berjam-jam hingga berhari-hari!)</span></p>
+                            <p><strong>Perkiraan waktu:</strong> <span class="text-warning">Lebih lama (lebih dari 1 menit)</span></p>
                         </div>
                     </div>
                 </div>
@@ -104,7 +103,7 @@
                         <span id="attemptCount">0</span>
                     </div>
                     <div class="status-item">
-                        <label>Perkiraan Sisa:</label>
+                        <label>Perkiraan waktu yang dibutuhkan:</label>
                         <span id="estimatedTime">-</span>
                     </div>
                 </div>
@@ -134,7 +133,8 @@
             </div>
             <div class="modal-body">
                 <div class="warning-icon">⚠️</div>
-                <p><strong>PERINGATAN:</strong> Mode 8 digit akan mencoba 100 juta kombinasi password. Proses ini dapat memakan waktu sangat lama (berjam-jam hingga berhari-hari) dan akan menggunakan banyak sumber daya komputer.</p>
+                <p><strong>PERINGATAN</strong></p>
+                <p>Mode 8 digit akan mencoba 100 juta kombinasi password. Proses ini dapat memakan waktu yang lebih lama dan akan menggunakan banyak sumber daya komputer.</p>
                 <p>Apakah Anda yakin ingin melanjutkan?</p>
             </div>
             <div class="modal-footer">
@@ -143,6 +143,31 @@
             </div>
         </div>
     </div>
+
+    <!-- Alert Modal -->
+    <div class="modal hidden" id="alertModal" data-variant="info">
+        <div class="modal-overlay" data-alert-close></div>
+        <div class="modal-content modal-content--alert">
+            <div class="modal-header">
+                <h3 id="alertModalTitle">Informasi</h3>
+            </div>
+            <div class="modal-body">
+                <div class="alert-icon" id="alertModalIcon">ℹ️</div>
+                <p id="alertModalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn--primary" id="alertModalClose" type="button">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="app-footer">
+        <div class="app-footer__content">
+            <span>© {{ current_year }} <a href="http://cakson.my.id/" class="app-footer__link" target="_blank" rel="noopener noreferrer">{{ creator_name }}</a></span>
+            <span class="app-footer__divider">•</span>
+            <span>Dibuat dengan ❤️ untuk membantu membuka PDF Anda.</span>
+        </div>
+    </footer>
 
     <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>

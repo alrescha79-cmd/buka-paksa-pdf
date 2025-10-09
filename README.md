@@ -11,26 +11,15 @@ Aplikasi ini membantu Anda membuka file PDF yang terkunci password dengan metode
 > [!CAUTION]  
 > Pengembang tidak bertanggung jawab atas penyalahgunaan aplikasi ini.
 
+---
+
+Tampilan Web UI menggunakan `Flask` yang modern dan responsif, serta algoritma brute force yang dioptimalkan dengan multi-threading untuk memaksimalkan penggunaan CPU.
+![Tampilan Aplikasi](image1.png)
+
+Tampilan GUI menggunakan `tkinter` yang ringan dan responsif, serta algoritma brute force yang dioptimalkan dengan multi-threading untuk memaksimalkan penggunaan CPU.
 ![Tampilan Aplikasi](image.png)
 
-## 🏗️ Struktur Modular
-
-```
-pdf-viewer/
-├── 📂 core/                    # Logika utama
-│   ├── __init__.py
-│   └── password_cracker.py     # Algoritma pembuka password
-│
-├── 📂 ui/                      # Komponen antarmuka
-│   ├── __init__.py
-│   ├── custom_dialog.py        # Dialog interaktif
-│   ├── pdf_viewer.py           # Penampil PDF & navigasi
-│   └── progress_monitor.py     # Progress & monitoring
-│
-├── main.py                     # Aplikasi utama
-├── launcher.py                 # Script peluncur cepat
-└── requirements.txt            # Daftar dependensi
-```
+---
 
 ## ✨ Fitur Utama
 
@@ -84,17 +73,31 @@ pip install -r requirements.txt
 
 ### **Menjalankan Aplikasi:**
 
-Jalankan langsung
+1. Menggunakan Web UI (Flask):
 
-```bash
-python main.py
-```
+    ```bash
+    flask run
+    ```
 
-Atau pakai launcher
+    atau
 
-```bash
-python launcher.py
-```
+    ```bash
+    python app.py
+    ```
+
+2. Menggunakan GUI (tkinter):
+
+    Jalankan langsung
+
+    ```bash
+    python main.py
+    ```
+
+    Atau pakai launcher
+
+    ```bash
+    python launcher.py
+    ```
 
 ## 📋 Cara Penggunaan
 
