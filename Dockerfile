@@ -5,6 +5,7 @@ FROM python:3.12.8-slim AS base
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     poppler-utils \
+    libgl1-mesa-glx \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
