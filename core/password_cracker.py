@@ -9,12 +9,26 @@ import multiprocessing
 import queue
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-def test_password_range(pdf_path, start_range, end_range, digits, progress_q, stop_evt, pause_evt):
+
+def _open_document(pdf_source):
+    """Open a PDF document from various source types."""
+    if isinstance(pdf_source, bytes):
+        return fitz.open(stream=pdf_source, filetype="pdf")
+    if isinstance(pdf_source, bytearray):
+        return fitz.open(stream=bytes(pdf_source), filetype="pdf")
+    if isinstance(pdf_source, memoryview):
+        return fitz.open(stream=pdf_source.tobytes(), filetype="pdf")
+    if hasattr(pdf_source, "read"):
+        data = pdf_source.read()
+        return fitz.open(stream=data, filetype="pdf")
+    return fitz.open(pdf_source)
+
+def test_password_range(pdf_source, start_range, end_range, digits, progress_q, stop_evt, pause_evt):
     """
     Fungsi untuk mentest range password dalam thread terpisah dengan dukungan pause
     """
     try:
-        doc = fitz.open(pdf_path)
+        doc = _open_document(pdf_source)
         if not doc.is_encrypted:
             return None
         
@@ -83,11 +97,11 @@ class PasswordCracker:
         self.stop_event = stop_event
         self.pause_event = pause_event
     
-    def crack_6_digit_multithread(self, pdf_path):
+    def crack_6_digit_multithread(self, pdf_source):
         """Crack 6-digit password dengan multithread"""
         def run_brute_force():
             try:
-                doc = fitz.open(pdf_path)
+                doc = _open_document(pdf_source)
             except Exception as e:
                 self.progress_queue.put(("error", f"Tidak bisa membuka file: {str(e)}"))
                 return
@@ -108,7 +122,7 @@ class PasswordCracker:
                 for i in range(cpu_count):
                     start_range = i * chunk_size
                     end_range = (i + 1) * chunk_size if i < cpu_count - 1 else 1000000
-                    future = executor.submit(test_password_range, pdf_path, start_range, end_range, 6, 
+                    future = executor.submit(test_password_range, pdf_source, start_range, end_range, 6, 
                                            self.progress_queue, self.stop_event, self.pause_event)
                     futures.append(future)
                 
@@ -134,11 +148,11 @@ class PasswordCracker:
         threading.Thread(target=run_brute_force, daemon=True).start()
         return True
     
-    def crack_8_digit_multithread(self, pdf_path):
+    def crack_8_digit_multithread(self, pdf_source):
         """Crack 8-digit password dengan multithread"""
         def run_brute_force():
             try:
-                doc = fitz.open(pdf_path)
+                doc = _open_document(pdf_source)
             except Exception as e:
                 self.progress_queue.put(("error", f"Tidak bisa membuka file: {str(e)}"))
                 return
@@ -159,7 +173,7 @@ class PasswordCracker:
                 for i in range(cpu_count):
                     start_range = i * chunk_size
                     end_range = (i + 1) * chunk_size if i < cpu_count - 1 else 100000000
-                    future = executor.submit(test_password_range, pdf_path, start_range, end_range, 8, 
+                    future = executor.submit(test_password_range, pdf_source, start_range, end_range, 8, 
                                            self.progress_queue, self.stop_event, self.pause_event)
                     futures.append(future)
                 
@@ -185,10 +199,10 @@ class PasswordCracker:
         threading.Thread(target=run_brute_force, daemon=True).start()
         return True
     
-    def crack_6_digit_single(self, pdf_path):
+    def crack_6_digit_single(self, pdf_source):
         """Crack 6-digit password dengan single thread"""
         try:
-            doc = fitz.open(pdf_path)
+            doc = _open_document(pdf_source)
         except Exception as e:
             return {"error": f"Tidak bisa membuka file PDF: {str(e)}"}
 
@@ -233,10 +247,10 @@ class PasswordCracker:
         else:
             return {"success": False, "duration": durasi}
     
-    def crack_8_digit_single(self, pdf_path):
+    def crack_8_digit_single(self, pdf_source):
         """Crack 8-digit password dengan single thread"""
         try:
-            doc = fitz.open(pdf_path)
+            doc = _open_document(pdf_source)
         except Exception as e:
             return {"error": f"Tidak bisa membuka file: {str(e)}"}
 

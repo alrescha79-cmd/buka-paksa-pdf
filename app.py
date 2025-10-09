@@ -1,8 +1,9 @@
-import os
+import base64
+import io
 import queue
 import threading
 import time
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
 import fitz  # PyMuPDF
 
@@ -11,13 +12,7 @@ from core.password_cracker import PasswordCracker
 
 # --- Flask App Setup ---
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['UNLOCKED_FOLDER'] = 'unlocked'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit
-
-# Ensure directories exist
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs(app.config['UNLOCKED_FOLDER'], exist_ok=True)
 
 # --- Job State Management ---
 # This dictionary will hold the state of the cracking job.
@@ -44,9 +39,43 @@ def reset_job_state():
         "rate": 0,
         "eta": "N/A",
         "elapsed": "0s",
-        "current_attempt": "..."
+        "current_attempt": "...",
+        "pdf_bytes": None,
+        "unlocked_pdf_base64": None,
+        "unlocked_error": None,
+        "start_time": None
     }
 reset_job_state()
+
+
+def prepare_unlocked_pdf(password):
+    """Generate and cache a base64-encoded unlocked PDF."""
+    pdf_bytes = JOB_STATE.get("pdf_bytes")
+    filename = JOB_STATE.get("filename") or "uploaded.pdf"
+
+    if not pdf_bytes:
+        raise ValueError("No PDF data available to unlock.")
+
+    try:
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    except Exception as exc:  # pragma: no cover - defensive
+        raise ValueError(f"Could not reopen PDF: {exc}") from exc
+
+    try:
+        if not doc.authenticate(password):
+            raise ValueError("Unable to authenticate PDF with discovered password.")
+
+        output = io.BytesIO()
+        doc.save(output, encryption=fitz.PDF_ENCRYPT_NONE)
+        doc.close()
+        output.seek(0)
+        encoded = base64.b64encode(output.read()).decode("ascii")
+        JOB_STATE["unlocked_pdf_base64"] = encoded
+        JOB_STATE["pdf_bytes"] = None
+        return encoded
+    except Exception as exc:  # pragma: no cover - defensive
+        doc.close()
+        raise ValueError(f"Failed to prepare unlocked PDF for {filename}: {exc}") from exc
 
 
 def cracking_monitor():
@@ -67,6 +96,11 @@ def cracking_monitor():
             elif msg_type == "found":
                 JOB_STATE["status"] = "found"
                 JOB_STATE["password"] = data
+                try:
+                    prepare_unlocked_pdf(data)
+                except ValueError as exc:
+                    JOB_STATE["status"] = "error"
+                    JOB_STATE["error_message"] = str(exc)
                 break
             elif msg_type == "completed":
                 JOB_STATE["status"] = "failed"
@@ -85,7 +119,10 @@ def cracking_monitor():
 
     # Final cleanup
     if not stop_event.is_set() and JOB_STATE["status"] not in ["found", "failed", "error"]:
-         JOB_STATE["status"] = "failed"
+        JOB_STATE["status"] = "failed"
+
+    if JOB_STATE.get("status") in {"failed", "error", "stopped"}:
+        JOB_STATE["pdf_bytes"] = None
 
 
 # --- Flask Routes ---
@@ -115,12 +152,14 @@ def start_cracking():
 
     if file:
         filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
+        file_bytes = file.read()
+
+        if not file_bytes:
+            return jsonify({"error": "Uploaded file is empty."}), 400
 
         # Check if PDF is encrypted
         try:
-            doc = fitz.open(filepath)
+            doc = fitz.open(stream=file_bytes, filetype="pdf")
             if not doc.is_encrypted:
                 doc.close()
                 return jsonify({
@@ -137,7 +176,8 @@ def start_cracking():
             "status": "running",
             "filename": filename,
             "total": 1_000_000 if digit_mode == '6' else 100_000_000,
-            "start_time": time.time()
+            "start_time": time.time(),
+            "pdf_bytes": file_bytes
         })
 
         # Start the correct cracking method in a background thread
@@ -152,7 +192,7 @@ def start_cracking():
              return jsonify({"error": "This web UI only supports the multi-threaded method."}), 400
 
         # Start cracker and monitor in background threads
-        cracker_thread = threading.Thread(target=target_func, args=(filepath,), daemon=True)
+        cracker_thread = threading.Thread(target=target_func, args=(file_bytes,), daemon=True)
         monitor_thread = threading.Thread(target=cracking_monitor, daemon=True)
         
         cracker_thread.start()
@@ -180,13 +220,15 @@ def get_status():
         
         JOB_STATE["elapsed"] = f"{elapsed_seconds:.1f}s"
 
-    return jsonify(JOB_STATE)
+    public_state = {k: v for k, v in JOB_STATE.items() if k not in {"pdf_bytes"}}
+    return jsonify(public_state)
 
 @app.route('/stop', methods=['POST'])
 def stop_cracking():
     """Stop the currently running process."""
     if JOB_STATE["status"] == "running":
         stop_event.set()
+        JOB_STATE["pdf_bytes"] = None
         return jsonify({"message": "Stop signal sent."})
     return jsonify({"error": "No process is running."}), 400
 
@@ -194,18 +236,31 @@ def stop_cracking():
 @app.route('/unlocked/<filename>/<password>')
 def serve_unlocked_pdf(filename, password):
     """Serve the unlocked PDF file for viewing."""
-    original_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    unlocked_path = os.path.join(app.config['UNLOCKED_FOLDER'], f"unlocked_{filename}")
-    
+    if JOB_STATE.get("status") != "found":
+        return "No unlocked PDF available.", 404
+
+    if JOB_STATE.get("filename") != filename:
+        return "Requested file does not match the active job.", 400
+
+    if JOB_STATE.get("password") != password:
+        return "Password mismatch for the requested PDF.", 403
+
+    encoded = JOB_STATE.get("unlocked_pdf_base64")
+    if not encoded:
+        try:
+            encoded = prepare_unlocked_pdf(password)
+        except ValueError as exc:
+            return str(exc), 500
+
     try:
-        doc = fitz.open(original_path)
-        if doc.authenticate(password):
-            doc.save(unlocked_path)
-            return send_from_directory(app.config['UNLOCKED_FOLDER'], f"unlocked_{filename}", as_attachment=False)
-        else:
-            return "Invalid password provided.", 403
-    except Exception as e:
-        return f"Could not open or save the PDF: {e}", 500
+        pdf_bytes = base64.b64decode(encoded)
+    except Exception:
+        return "Failed to decode unlocked PDF data.", 500
+
+    buffer = io.BytesIO(pdf_bytes)
+    buffer.seek(0)
+    download_name = f"unlocked_{filename}"
+    return send_file(buffer, mimetype='application/pdf', download_name=download_name, as_attachment=False)
 
 if __name__ == '__main__':
     app.run(debug=True)

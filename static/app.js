@@ -34,11 +34,14 @@
   const cancelConfirmBtn = document.getElementById('cancelConfirm');
   const confirmStartBtn = document.getElementById('confirmStart');
 
+  const STORAGE_PREFIX = 'pdf-viewer:';
+
   // State
   let selectedFile = null;
   let selectedMode = null; // '6' or '8'
   let statusInterval = null;
   let lastProgress = 0;
+  let unlockedBlobUrl = null;
 
   // Helpers
   function bytesToSize(bytes) {
@@ -46,6 +49,73 @@
     if (bytes === 0) return '0 B';
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
+  }
+
+  function safeSetLocalStorage(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (err) {
+      console.warn('Failed to persist data to localStorage', err);
+      return false;
+    }
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result || '';
+        const [, base64 = ''] = String(result).split(',');
+        resolve(base64);
+      };
+      reader.onerror = () => reject(reader.error || new Error('Failed to read file.'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function cacheUploadedPdf(file) {
+    fileToBase64(file)
+      .then((base64) => {
+        if (!base64) return;
+        const key = `${STORAGE_PREFIX}original:${file.name}`;
+        safeSetLocalStorage(key, base64);
+      })
+      .catch((err) => console.warn('Unable to cache uploaded PDF', err));
+  }
+
+  function storeUnlockedPdf(base64, filename) {
+    if (!base64) return false;
+    const key = `${STORAGE_PREFIX}unlocked:${filename}`;
+    return safeSetLocalStorage(key, base64);
+  }
+
+  function getUnlockedPdfFromStorage(filename) {
+    const key = `${STORAGE_PREFIX}unlocked:${filename}`;
+    return localStorage.getItem(key);
+  }
+
+  function createBlobUrlFromBase64(base64) {
+    try {
+      const byteString = atob(base64);
+      const len = byteString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i += 1) {
+        bytes[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      return URL.createObjectURL(blob);
+    } catch (err) {
+      console.warn('Failed to create blob from base64', err);
+      return null;
+    }
+  }
+
+  function revokeUnlockedBlob() {
+    if (unlockedBlobUrl) {
+      URL.revokeObjectURL(unlockedBlobUrl);
+      unlockedBlobUrl = null;
+    }
   }
 
   function show(el) { el.classList.remove('hidden'); }
@@ -65,6 +135,8 @@
     hide(fileInfo);
     fileNameEl.textContent = '';
     fileSizeEl.textContent = '';
+
+  revokeUnlockedBlob();
 
     // Sections
     show(uploadArea.closest('section'));
@@ -135,6 +207,7 @@
     fileSizeEl.textContent = bytesToSize(file.size);
     show(fileInfo);
     show(modeSection);
+    cacheUploadedPdf(file);
     // Scroll into view
     modeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -251,7 +324,30 @@
 
       if (data.status === 'found') {
         statusMessageEl.textContent = 'Password ditemukan!';
-        const viewUrl = `/unlocked/${encodeURIComponent(data.filename)}/${encodeURIComponent(data.password)}`;
+        let storageMessage = '';
+        let blobUrl = null;
+
+        if (data.unlocked_pdf_base64) {
+          const stored = storeUnlockedPdf(data.unlocked_pdf_base64, data.filename);
+          if (!stored) {
+            storageMessage = '<p class="text-warning">Tidak dapat menyimpan PDF ke local storage (batas ruang tercapai).</p>';
+          }
+          revokeUnlockedBlob();
+          blobUrl = createBlobUrlFromBase64(data.unlocked_pdf_base64);
+        } else {
+          const cached = getUnlockedPdfFromStorage(data.filename);
+          if (cached) {
+            revokeUnlockedBlob();
+            blobUrl = createBlobUrlFromBase64(cached);
+          }
+        }
+
+        if (!blobUrl) {
+          storageMessage += '<p class="text-warning">PDF belum tersedia di browser. Coba muat ulang status atau periksa koneksi.</p>';
+        } else {
+          unlockedBlobUrl = blobUrl;
+        }
+
         resultsContent.innerHTML = `
           <div class="success-result">
             <div class="success-icon">🎉</div>
@@ -262,11 +358,26 @@
             </div>
             <div class="pdf-preview">
               <div class="preview-icon">📄</div>
-              <p>PDF berhasil dibuka. Klik tombol di bawah untuk melihat.</p>
-              <a class="btn btn--primary" href="${viewUrl}" target="_blank">Lihat PDF Terbuka</a>
+              <p>PDF berhasil dibuka dan disimpan di local storage browser Anda.</p>
+              ${blobUrl ? '<iframe id="unlockedPdfFrame" class="pdf-frame" title="Pratinjau PDF" frameborder="0"></iframe>' : ''}
+              ${blobUrl ? `<div class="preview-actions"><button class="btn btn--outline" id="openPdfNewTab">Buka di Tab Baru</button></div>` : ''}
+              ${storageMessage}
             </div>
           </div>
         `;
+
+        if (blobUrl) {
+          const frame = document.getElementById('unlockedPdfFrame');
+          if (frame) {
+            frame.src = blobUrl;
+          }
+          const openBtn = document.getElementById('openPdfNewTab');
+          if (openBtn) {
+            openBtn.addEventListener('click', () => {
+              window.open(blobUrl, '_blank', 'noopener');
+            });
+          }
+        }
       } else if (data.status === 'failed' || data.status === 'error') {
         statusMessageEl.textContent = data.status === 'error' ? (data.error_message || 'Terjadi kesalahan.') : 'Selesai tanpa menemukan password.';
         resultsContent.innerHTML = `

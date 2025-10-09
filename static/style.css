@@ -486,6 +486,8 @@ body { background-color: var(--color-background); min-height: 100vh; }
 .password-label { font-size: var(--font-size-sm); color: var(--color-text-secondary); margin-bottom: var(--space-8); }
 .password-value { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); color: var(--color-success); font-family: var(--font-family-mono); }
 .pdf-preview { background: var(--color-bg-6); border: 2px dashed var(--color-border); border-radius: var(--radius-lg); padding: var(--space-32); text-align: center; margin: var(--space-20) 0; }
+.pdf-frame { width: 100%; min-height: 480px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface); box-shadow: var(--shadow-sm); }
+.preview-actions { display: flex; flex-wrap: wrap; gap: var(--space-12); justify-content: center; }
 .preview-icon { font-size: 3rem; margin-bottom: var(--space-16); }
 .failure-result { text-align: center; padding: var(--space-24); }
 .failure-icon { font-size: 4rem; margin-bottom: var(--space-16); }
