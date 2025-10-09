@@ -1,2 +1,4 @@
+Flask
+gunicorn
 PyMuPDF==1.26.4
 Pillow==10.3.0
