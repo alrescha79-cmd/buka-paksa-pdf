@@ -22,7 +22,7 @@ class ProgressMonitor:
         
         # Animation properties
         self.animation_frame = 0
-        self.spinner_chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+        self.spinner_chars = ["|", "/", "-", "\\"]
         self.current_password_attempt = ""
         self.last_update = time.time()
         self.update_counter = 0
@@ -129,35 +129,25 @@ class ProgressMonitor:
                     filled = int((percentage / 100) * bar_width)
                     bar = "█" * filled + "░" * (bar_width - filled)
                     
-                    # Emoji status
-                    if percentage < 25:
-                        progress_emoji = "🔍"
-                    elif percentage < 50:
-                        progress_emoji = "⚡"
-                    elif percentage < 75:
-                        progress_emoji = "🚀"
-                    else:
-                        progress_emoji = "🎯"
-                    
                     # Password yang sedang dicoba
                     current_pwd_display = self.current_password_attempt if self.current_password_attempt else "..."
                     
                     status_text = (
-                        f"{spinner} {progress_emoji} Proses Membuka Password PDF {progress_emoji} {spinner}\n"
+                        f"{spinner} Proses Membuka Password PDF... {spinner}\n"
                         f"Progress: [{bar}] {percentage:.2f}%\n"
-                        f"🔢 Jumlah percobaan: {self.current_progress['tested']:,} dari {self.current_progress['total']:,}\n"
-                        f"⚡ Kecepatan: {rate:.0f} percobaan/detik\n"
-                        f"⏱️ Waktu berjalan: {format_time(elapsed)}\n"
-                        f"⏳ Estimasi sisa: {format_time(eta_seconds)}\n"
-                        f"🔑 Password yang sedang dicoba: {current_pwd_display}"
+                        f"Jumlah percobaan: {self.current_progress['tested']:,} dari {self.current_progress['total']:,}\n"
+                        f"Kecepatan: {rate:.0f} percobaan/detik\n"
+                        f"Waktu berjalan: {format_time(elapsed)}\n"
+                        f"Estimasi sisa: {format_time(eta_seconds)}\n"
+                        f"Password yang sedang dicoba: {current_pwd_display}"
                     )
                 else:
                     # Awal proses atau progress sangat awal
                     status_text = (
-                        f"{spinner} 🚀 Memulai proses brute force... 🚀 {spinner}\n"
-                        f"⏱️ Waktu berjalan: {format_time(elapsed)}\n"
-                        f"⚙️ Menyiapkan proses pencarian password...\n"
-                        f"🔑 Password yang sedang dicoba: {self.current_password_attempt if self.current_password_attempt else 'Belum mulai'}"
+                        f"{spinner} Memulai proses brute force... {spinner}\n"
+                        f"Waktu berjalan: {format_time(elapsed)}\n"
+                        f"Menyiapkan proses pencarian password...\n"
+                        f"Password yang sedang dicoba: {self.current_password_attempt if self.current_password_attempt else 'Belum mulai'}"
                     )
                 
                 self.status_label.config(text=status_text)

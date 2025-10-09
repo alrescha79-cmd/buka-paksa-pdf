@@ -2,13 +2,13 @@
 
 Aplikasi ini membantu Anda membuka file PDF yang terkunci password dengan metode brute force (coba semua kombinasi angka 6 atau 8 digit), serta dilengkapi penampil PDF yang lengkap dan mudah digunakan.
 
-> **PENTING!**
+> [!IMPORTANT] 
 > Aplikasi ini hanya untuk pembelajaran. Membuka file PDF yang dilindungi tanpa izin adalah tindakan ilegal.
 
-> **PERINGATAN!**
+> [!WARNING] 
 > Pastikan Anda memang berhak membuka file PDF tersebut. Gunakan aplikasi ini hanya untuk file milik Anda atau yang Anda punya izin untuk membukanya.
 
-> **DISCLAIMER**
+> [!CAUTION]  
 > Pengembang tidak bertanggung jawab atas penyalahgunaan aplikasi ini.
 
 ![Tampilan Aplikasi](image.png)
@@ -65,25 +65,35 @@ pdf-viewer/
 
 ### **Syarat:**
 
-- Python 3.7+
+- Python 3.7+ =====> [Cara Install Python di Windows, Linux dan MacOS](https://www.codepolitan.com/blog/cara-install-python-di-windows-macos-dan-linux-lengkap/)
 - Dependensi: `PyMuPDF`, `Pillow`, `tkinter`
 
 ### **Instalasi:**
 
 ```bash
 git clone https://github.com/alrescha79-cmd/buka-paksa-pdf.git pdf-viewer
+```
+
+```bash
 cd pdf-viewer
+```
+
+```bash
 pip install -r requirements.txt
 ```
 
 ### **Menjalankan Aplikasi:**
 
-```bash
-# Jalankan langsung
-tpython main.py
+Jalankan langsung
 
-# Atau pakai launcher
-tpython launcher.py
+```bash
+python main.py
+```
+
+Atau pakai launcher
+
+```bash
+python launcher.py
 ```
 
 ## 📋 Cara Penggunaan
@@ -186,5 +196,16 @@ sudo dnf install python3-tkinter # Fedora
 | **Rendering**    | Pillow (PIL)     | Tampilkan halaman PDF        |
 | **Threading**    | concurrent.futures| Paralel brute force password |
 | **Range Password**| Angka brute force| 6 digit: 1 juta, 8 digit: 100 juta |
+
+---
+
+## Kontribusi
+
+Anda dipersilakan untuk berkontribusi pada proyek ini. Berikut beberapa cara Anda bisa membantu:
+
+- **Laporkan Bug:** Jika Anda menemukan bug atau masalah, silakan laporkan di bagian "Issues" di GitHub.
+- **Ajukan Fitur Baru:** Punya ide untuk fitur baru? Ajukan di bagian "Issues" atau buat pull request.
+- **Perbaiki Dokumentasi:** Bantulah memperbaiki dokumentasi agar lebih jelas dan lengkap.
+- **Kode:** Jika Anda seorang pengembang, Anda bisa membantu dengan mengirimkan pull request untuk memperbaiki bug atau menambahkan fitur baru. memperbaiki dokumentasi agar lebih jelas dan lengkap.
 
 ---
